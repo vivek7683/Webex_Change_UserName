@@ -1,0 +1,97 @@
+import requests
+import json
+import xmltodict
+
+print('''
+       
+''')
+print('Welcome to Webex')
+
+my_site = input('Enter site name: ')
+my_email = input('Enter your email with full admin access to Control Hub: ')
+my_pwd = input('Enter password: ')
+my_url = 'https://api.webex.com/WBXService/XMLService'
+
+print('''
+Please wait...
+''')
+
+body_data = f'''<?xml version="1.0" encoding="UTF-8"?>
+                <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <header>
+                    <securityContext>
+                            <siteName>{my_site}</siteName>
+                                <webExID>{my_email}</webExID>
+                                <password>{my_pwd}</password>
+                    </securityContext>
+                </header>
+                <body>
+                    <bodyContent xsi:type="java:com.webex.service.binding.user.LstUser">
+                    </bodyContent>
+                </body>
+                </serv:message>'''
+
+r1 = requests.post(
+    'https://api.webex.com/WBXService/XMLService', data=body_data)
+
+my_dict = xmltodict.parse(r1.content)
+
+my_json = json.loads(json.dumps(my_dict))
+
+my_list = my_json['serv:message']['serv:body']['serv:bodyContent']['use:user']
+
+user_list = []
+nos = 1
+
+for user in my_list:
+    print('--' * 40)
+    print(nos)
+    print('Name:', user['use:firstName'], user['use:lastName'])
+    print('Email:', user['use:email'])
+    user_list.append(user['use:email'])
+    print('--' * 40)
+    nos = nos + 1
+
+print(''' 
+''')
+
+print('Your org has total of', nos - 1, 'users')
+
+user_index = int(
+    input(
+        'Enter the index of user for which you want to change first name or last name: '
+    ))
+
+user_input = user_list[user_index - 1]
+
+fn_new = input('Enter new first name: ')
+ln_new = input('Enter new last name: ')
+
+print('''
+Please wait for confirmation...''')
+
+body_data_name = f'''<?xml version="1.0" encoding="UTF-8"?>
+                <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <header>
+                    <securityContext>
+                            <siteName>{my_site}</siteName>
+                                <webExID>{my_email}</webExID>
+                                <password>{my_pwd}</password>
+                    </securityContext>
+                </header>
+                <body>
+                    <bodyContent xsi:type="java:com.webex.service.binding.user.SetUser">
+                    <webExId>{user_input}</webExId>
+                    <use:firstName>{fn_new}</use:firstName>
+                    <use:lastName>{ln_new}</use:lastName>
+                    </bodyContent>
+                </body>
+                </serv:message>'''
+
+r2 = requests.post(
+    'https://api.webex.com/WBXService/XMLService', data=body_data_name)
+
+if 'SUCCESS' in str(r2.text):
+    print('Name has been changed succesfully')
+else:
+    print('Name change operation failed, please retry')
